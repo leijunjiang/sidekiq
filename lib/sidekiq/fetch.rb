@@ -35,14 +35,30 @@ module Sidekiq
       end
       if @strictly_ordered_queues
         @queues = @queues.uniq
-        @queues << TIMEOUT
+
+        # @queues << TIMEOUT
       end
+      @false_or_true = false
     end
 
     def retrieve_work
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
-      work = Sidekiq.redis do ||
-       conn.brpop(*queues_cmd) 
+      if @false_or_true
+        # for priority queues
+        pq_queues_cmd = queues_cmd[1]
+        queue, job, score  = Sidekiq.redis do |conn|
+         conn.bzpopmin(*pq_queues_cmd) 
+        end
+        work = [queue, job]
+        @false_or_true = !@false_or_true
+      
+      else
+        # for normal queues
+        normal_queues_cmd = queues_cmd[0]
+        work = Sidekiq.redis do |conn|
+         conn.brpop(*normal_queues_cmd) 
+        end
+        @false_or_true = !@false_or_true
       end
       UnitOfWork.new(*work) if work
     end
@@ -53,12 +69,23 @@ module Sidekiq
     # recreate the queue command each time we invoke Redis#brpop
     # to honor weights and avoid queue starvation.
     def queues_cmd
+
       if @strictly_ordered_queues
-        @queues
+        normal_queues = @queues.select {|q| !q.start_with?('pq_queue')}
+        pq_queues = @queues.select {|q| !q.start_with?('pq_queue')}
+        normal_queues << TIMEOUT
+        pq_queues << TIMEOUT
+
+        [normal_queues, pq_queues]
       else
         queues = @queues.shuffle.uniq
-        queues << TIMEOUT
-        queues
+
+        normal_queues = queues.select {|q| !q.start_with?('pq_queue')}
+        pq_queues = queues.select {|q| !q.start_with?('pq_queue')}
+        normal_queues << TIMEOUT
+        pq_queues << TIMEOUT
+
+        [normal_queues, pq_queues]
       end
     end
 

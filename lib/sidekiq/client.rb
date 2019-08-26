@@ -204,11 +204,13 @@ module Sidekiq
                 user_priority_score += 1
                 [user_priority_score, Sidekiq.dump_json(hash)]
               })
+              conn.zincrby('user_priority_score',1,client_id.to_s)
             else
               conn.zadd("priority_queues",payloads.map { |hash|
                 user_priority_score = 0.0
                 [user_priority_score, Sidekiq.dump_json(hash)]
               })
+              conn.zadd('user_priority_score',0,client_id.to_s)
             end
           end
         else

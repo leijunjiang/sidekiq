@@ -18,6 +18,7 @@ module Sidekiq
       end
 
       def requeue
+        ## @done = true only after terminate and kill action
         Sidekiq.redis do |conn|
           conn.rpush("queue:#{queue_name}", job)
         end
@@ -46,12 +47,22 @@ module Sidekiq
       if @false_or_true
         # for priority queues
         pq_queues_cmd = queues_cmd[1]
-        queue, job, score  = Sidekiq.redis do |conn|
+        queue, job = Sidekiq.redis do |conn|
          conn.bzpopmin(*pq_queues_cmd) 
         end
         work = [queue, job]
+
+        parsed_job = Sidekiq.load_json(job)
+        client_id = parsed_job["client_id"]
+
+        Sidekiq.redis do |conn|
+          conn.zincrby('user_priority_score', -1, client_id.to_s)
+          if conn.zscore('user_priority_score',client_id.to_s) == 0.0
+            conn.zrem('user_priority_score',client_id.to_s)
+          end
+        end
+
         @false_or_true = !@false_or_true
-      
       else
         # for normal queues
         normal_queues_cmd = queues_cmd[0]
@@ -71,17 +82,30 @@ module Sidekiq
     def queues_cmd
 
       if @strictly_ordered_queues
-        normal_queues = @queues.select {|q| !q.start_with?('pq_queue')}
-        pq_queues = @queues.select {|q| !q.start_with?('pq_queue')}
+        normal_queues = []
+        pq_queues = [] 
+        @queues.each do |q|
+          if q.start_with?('pq_queue')
+            pq_queues << q
+          else
+            normal_queues << q
+          end
+        end
         normal_queues << TIMEOUT
         pq_queues << TIMEOUT
 
         [normal_queues, pq_queues]
       else
         queues = @queues.shuffle.uniq
-
-        normal_queues = queues.select {|q| !q.start_with?('pq_queue')}
-        pq_queues = queues.select {|q| !q.start_with?('pq_queue')}
+        normal_queues = []
+        pq_queues = [] 
+        queues.each do |q|
+          if q.start_with?('pq_queue')
+            pq_queues << q
+          else
+            normal_queues << q
+          end
+        end
         normal_queues << TIMEOUT
         pq_queues << TIMEOUT
 

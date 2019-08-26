@@ -195,13 +195,33 @@ module Sidekiq
         })
       else
         queue = payloads.first["queue"]
-        now = Time.now.to_f
-        to_push = payloads.map { |entry|
-          entry["enqueued_at"] = now
-          Sidekiq.dump_json(entry)
-        }
-        conn.sadd("queues", queue)
-        conn.lpush("queue:#{queue}", to_push)
+
+        ### modification of sidekiq
+        if queue.start_with('pq_')
+          if client_id = payloads["client_id"]
+            if user_priority_score = conn.zscore('user_priority_score',client_id.to_s)
+              conn.zadd("priority_queues",payloads.map { |hash|
+                user_priority_score += 1
+                user_priority_score = user_priority_score.to_s
+                [user_priority_score, Sidekiq.dump_json(hash)]
+              })
+            else
+              conn.zadd("priority_queues",payloads.map { |hash|
+                user_priority_score = '0.0'
+                [user_priority_score, Sidekiq.dump_json(hash)]
+              })
+            end
+          end
+        else
+        ### legacy sidekiq
+          now = Time.now.to_f
+          to_push = payloads.map { |entry|
+            entry["enqueued_at"] = now
+            Sidekiq.dump_json(entry)
+          }
+          conn.sadd("queues", queue)
+          conn.lpush("queue:#{queue}", to_push)
+        end
       end
     end
 

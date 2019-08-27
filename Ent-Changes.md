@@ -7,8 +7,10 @@ Please see [http://sidekiq.org/](http://sidekiq.org/) for more details and how t
 HEAD
 -------------
 
+- Call `GC.compact` if possible in sidekiqswarm before forking [#4181]
 - Changes for forward-compatibility with Sidekiq 6.0.
 - Add death handler to remove any lingering unique locks [#4162]
+- Backoff can now be customized per rate limiter [#4219]
 
 1.8.1
 -------------

@@ -41,12 +41,6 @@ module Sidekiq
 
       self_read, self_write = IO.pipe
       sigs = %w[INT TERM TTIN TSTP]
-      # USR1 and USR2 don't work on the JVM
-      unless jruby?
-        sigs << "USR1"
-        sigs << "USR2"
-      end
-
       sigs.each do |sig|
         trap sig do
           self_write.write("#{sig}\n")
@@ -63,7 +57,7 @@ module Sidekiq
       # fire startup and start multithreading.
       ver = Sidekiq.redis_info["redis_version"]
       raise "You are using Redis v#{ver}, Sidekiq requires Redis v2.8.0 or greater" if ver < "2.8"
-      logger.warn "Sidekiq 6.0 will require Redis 4.0+, you are using Redis v#{ver}" if ver < "4"
+      logger.warn "Sidekiq 6.0 requires Redis 4.0+, you are using Redis v#{ver}" if ver < "4"
 
       # Since the user can pass us a connection pool explicitly in the initializer, we
       # need to verify the size is large enough or else Sidekiq's performance is dramatically slowed.
@@ -150,17 +144,13 @@ module Sidekiq
       # TERM is the signal that Sidekiq must exit.
       # Heroku sends TERM and then waits 30 seconds for process to exit.
       "TERM" => ->(cli) { raise Interrupt },
-      "USR1" => ->(cli) {
-        Sidekiq.logger.info "Received USR1, no longer accepting new work"
-        cli.launcher.quiet
-      },
       "TSTP" => ->(cli) {
         Sidekiq.logger.info "Received TSTP, no longer accepting new work"
         cli.launcher.quiet
       },
       "TTIN" => ->(cli) {
         Thread.list.each do |thread|
-          Sidekiq.logger.warn "Thread TID-#{(thread.object_id ^ ::Process.pid).to_s(36)} #{thread["sidekiq_label"]}"
+          Sidekiq.logger.warn "Thread TID-#{(thread.object_id ^ ::Process.pid).to_s(36)} #{thread.name}"
           if thread.backtrace
             Sidekiq.logger.warn thread.backtrace.join("\n")
           else

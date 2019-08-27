@@ -11,7 +11,7 @@ Gem::Specification.new do |gem|
   gem.executables   = ["sidekiq"]
   gem.files         = `git ls-files | grep -Ev '^(test|myapp|examples)'`.split("\n")
   gem.name          = "sidekiq"
-  gem.version       = Sidekiq::VERSION
+  gem.version       = "5.2.8"
   gem.required_ruby_version = ">= 2.5.0"
 
   gem.add_dependency "redis", ">= 4.1.0"

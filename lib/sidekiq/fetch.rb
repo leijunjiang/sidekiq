@@ -45,10 +45,10 @@ module Sidekiq
     def retrieve_work
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
       if @false_or_true
-        # for priority queues
+        # treatment for priority queues
         pq_queues_cmd = queues_cmd[1]
         queue, job = Sidekiq.redis do |conn|
-         conn.bzpopmin(*pq_queues_cmd) 
+          conn.bzpopmin(*pq_queues_cmd) 
         end
         work = [queue, job]
 
@@ -56,9 +56,9 @@ module Sidekiq
         client_id = parsed_job["client_id"]
 
         Sidekiq.redis do |conn|
-          conn.zincrby('user_priority_score', -1, client_id.to_s)
-          if conn.zscore('user_priority_score',client_id.to_s) == 0.0
-            conn.zrem('user_priority_score',client_id.to_s)
+          conn.zincrby('user_count', -1, client_id.to_s)
+          if conn.zscore('user_count',client_id.to_s) <= 0.0
+            conn.zrem('user_count',client_id.to_s)
           end
         end
 

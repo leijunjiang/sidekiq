@@ -193,8 +193,6 @@ module Sidekiq
           at = hash.delete("at").to_s
           [at, Sidekiq.dump_json(hash)]
         })
-        p '/' * 100
-        p "le job a ete pushed"
       else
         queue = payloads.first["queue"]
 
@@ -226,6 +224,8 @@ module Sidekiq
           }
           conn.sadd("queues", queue)
           conn.lpush("queue:#{queue}", to_push)
+          p '/' * 100
+          p "le job a ete pushed"
         end
       end
     end

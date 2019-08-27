@@ -61,7 +61,7 @@ module Sidekiq
             conn.zrem('user_count',client_id.to_s)
           end
         end
-
+        p 'pq job a ete traite'
         @false_or_true = !@false_or_true
       else
         # for normal queues
@@ -80,7 +80,6 @@ module Sidekiq
     # recreate the queue command each time we invoke Redis#brpop
     # to honor weights and avoid queue starvation.
     def queues_cmd
-      p '/' * 100
       if @strictly_ordered_queues
         normal_queues = []
         pq_queues = [] 

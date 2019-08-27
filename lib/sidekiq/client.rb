@@ -210,7 +210,7 @@ module Sidekiq
             conn.zincrby('user_priority_score',1,client_id.to_s)
             user_count += 1
             conn.zincrby('user_count',1,client_id.to_s)
-
+            p 'pq job a ete pushed'
           else
             # raise error
 
@@ -224,8 +224,6 @@ module Sidekiq
           }
           conn.sadd("queues", queue)
           conn.lpush("queue:#{queue}", to_push)
-          p '/' * 100
-          p "le job a ete pushed"
         end
       end
     end

@@ -80,7 +80,7 @@ module Sidekiq
     # recreate the queue command each time we invoke Redis#brpop
     # to honor weights and avoid queue starvation.
     def queues_cmd
-
+      p '/' * 100
       if @strictly_ordered_queues
         normal_queues = []
         pq_queues = [] 

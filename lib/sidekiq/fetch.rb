@@ -43,16 +43,17 @@ module Sidekiq
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
       p 'it is inside a retrieving work method'
 
-      p 'it is retrieving pq work'
+      # p 'it is retrieving pq work'
       # treatment for priority queues
-      p "@pq_queues = #{@pq_queues}"
-      p "pq_queues_cmd = #{pq_queues_cmd}"
+      
+      # p "@pq_queues = #{@pq_queues}"
+      # p "pq_queues_cmd = #{pq_queues_cmd}"
 
       pq_work = Sidekiq.redis do |conn|
         # conn.bzpopmin(*pq_queues_cmd) 
         conn.bzpopmin(*pq_queues_cmd)
       end
-      p "returning pq_work #{pq_work}"
+      # p "returning pq_work #{pq_work}"
       if pq_work
         queue, job, score = pq_work
         parsed_job = Sidekiq.load_json(job)
@@ -65,7 +66,7 @@ module Sidekiq
           end
         end
         work = [queue, job]
-        p "returning work #{work}"
+        # p "returning work #{work}"
         return UnitOfWork.new(*work) 
       end
     end

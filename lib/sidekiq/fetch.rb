@@ -27,29 +27,27 @@ module Sidekiq
 
     def initialize(options)
       @strictly_ordered_queues = !!options[:strict]
-      # @queues = options[:queues].map { |q| "queue:#{q}" }
-
-      @queues = options[:queues].map do |q|
-        queue_name = "queue:"
-        queue_name = "pq_queue:" if q.start_with?('pq_')
-        queue_name + "#{q}" 
-      end
+      @queues = options[:queues].map { |q| "queue:#{q}" }
       if @strictly_ordered_queues
         @queues = @queues.uniq
-
-        # @queues << TIMEOUT
+        @queues << TIMEOUT
+      end
+      @pq_queues = options[:pq_queues].map { |q| "pq_queue:#{q}" }
+      if @strictly_ordered_queues
+        @pq_queues = @pq_queues.uniq
+        @pq_queues << TIMEOUT
       end
     end
 
-    def basic_retrieve_work
+    def pq_retrieve_work
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
       p 'it is inside a retrieving work method'
 
       p 'it is retrieving pq work'
       # treatment for priority queues
-      p "@queues = #{@queues}"
-      pq_queues_cmd = queues_cmd[1]
+      p "@pq_queues = #{@pq_queues}"
       p "pq_queues_cmd = #{pq_queues_cmd}"
+      
       queue, job = Sidekiq.redis do |conn|
         conn.bzpopmin(*pq_queues_cmd) 
       end
@@ -111,34 +109,21 @@ module Sidekiq
     # to honor weights and avoid queue starvation.
     def queues_cmd
       if @strictly_ordered_queues
-        normal_queues = []
-        pq_queues = [] 
-        @queues.each do |q|
-          if q.start_with?('pq_queue')
-            pq_queues << q
-          else
-            normal_queues << q
-          end
-        end
-        normal_queues << TIMEOUT
-        pq_queues << TIMEOUT
-
-        [normal_queues, pq_queues]
+        @queues
       else
         queues = @queues.shuffle.uniq
-        normal_queues = []
-        pq_queues = [] 
-        queues.each do |q|
-          if q.start_with?('pq_queue')
-            pq_queues << q
-          else
-            normal_queues << q
-          end
-        end
-        normal_queues << TIMEOUT
-        pq_queues << TIMEOUT
+        queues << TIMEOUT
+        queues
+      end
+    end
 
-        [normal_queues, pq_queues]
+    def pq_queues_cmd
+      if @strictly_ordered_queues
+        @pq_queues
+      else
+        queues = @pq_queues.shuffle.uniq
+        queues << TIMEOUT
+        queues
       end
     end
 

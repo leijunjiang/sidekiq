@@ -86,7 +86,7 @@ module Sidekiq
       if false_or_true
         work = @strategy.retrieve_work
       else
-        work = @basic_fetch_strategy.basic_retrieve_work
+        work = @basic_fetch_strategy.pq_retrieve_work
       end
       work = @strategy.retrieve_work
       p "@strategy = #{@strategy}"

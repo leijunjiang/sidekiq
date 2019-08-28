@@ -45,6 +45,7 @@ module Sidekiq
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
       false_or_true = [true, false].sample
       if false_or_true
+        p 'it is retrieving pq work'
         # treatment for priority queues
         pq_queues_cmd = queues_cmd[1]
         queue, job = Sidekiq.redis do |conn|
@@ -61,7 +62,7 @@ module Sidekiq
             conn.zrem('user_count',client_id.to_s)
           end
         end
-        p 'pq job a ete traite'
+        p 'it has retrieved pq work'
       else
         # for normal queues
         normal_queues_cmd = queues_cmd[0]

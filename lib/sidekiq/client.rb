@@ -193,7 +193,6 @@ module Sidekiq
       # "lock_expiration"=>nil, 
       # "unique_prefix"=>"uniquejobs", 
       # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
-      p '/' * 100
       queue = payloads.first["queue"]
 
       if queue.start_with?('pq_')

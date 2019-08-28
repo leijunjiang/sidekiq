@@ -195,13 +195,27 @@ module Sidekiq
         })
       else
         queue = payloads.first["queue"]
-
+        # payloads = 
+        # [{"class"=>"GlobalScreeningWorker", 
+        # "args"=>[3531, {"source"=>"portfolio", "user_id"=>1}, "1"], 
+        # "retry"=>0, 
+        # "queue"=>"pq_dnb_screen", 
+        # "backtrace"=>true, 
+        # "unique"=>:until_and_while_executing, 
+        # "unique_args"=>[[3531, {"source"=>"portfolio", "user_id"=>1}, "1"]], 
+        # "jid"=>"90d0ae587bab5ff9920be9e6", 
+        # "created_at"=>1566983320.033751, 
+        # "lock_timeout"=>0, 
+        # "lock_expiration"=>nil, 
+        # "unique_prefix"=>"uniquejobs", 
+        # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
+        
         ### modification of sidekiq
         if queue.start_with?('pq_')
           p '/' * 100
           p payloads
           p '/' * 100
-          if client_id = payloads["client_id"]
+          if client_id = payloads.first["args"].second["user_id"]
             user_count = conn.zscore('user_count',client_id)
             user_count ||= 0.0
             user_priority_score = conn.zscore('user_priority_score',client_id)

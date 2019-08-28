@@ -194,10 +194,9 @@ module Sidekiq
       # "unique_prefix"=>"uniquejobs", 
       # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
       queue_name = payloads.first["queue"]
-      p '/' * 100
-      p payloads
       if queue_name.start_with?('pq_')
         p '/' * 100
+        p payloads
         p payloads.first["queue"]
         if client_id = payloads.first["args"].second["user_id"] || payloads.first["args"].second[:user_id]
           @redis_pool.with do |conn|

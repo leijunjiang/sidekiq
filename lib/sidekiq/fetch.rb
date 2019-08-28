@@ -59,11 +59,17 @@ module Sidekiq
         parsed_job = Sidekiq.load_json(job)
         client_id = parsed_job["client_id"] || parsed_job[:client_id]
 
-        Sidekiq.redis do |conn|
-          user_count = conn.zincrby('user_count', -1, client_id.to_s)
-          if user_count <= 0.0
+        user_count = Sidekiq.redis do |conn|
+          conn.zincrby('user_count', -1, client_id.to_s)
+        end
+        p "user_count = #{user_count}"
+        if user_count <= 0.0
+          Sidekiq.redis do |conn|
             conn.zrem('user_count',client_id.to_s)
           end
+          p "user_count ne bouge pas"
+        else
+          p "user_count est remis a zero"
         end
         work = [queue, job]
         # p "returning work #{work}"
@@ -73,37 +79,15 @@ module Sidekiq
 
 
     def retrieve_work
-      #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
-      p 'it is inside a retrieving work method'
-      false_or_true = [true, false].sample
-      if false_or_true
-        p 'it is retrieving pq work'
-        p "@queues = #{@queues}"
-        # treatment for priority queues
-        pq_queues_cmd = queues_cmd[1]
-        queue, job = Sidekiq.redis do |conn|
-          conn.bzpopmin(*pq_queues_cmd) 
-        end
-        work = [queue, job]
+      # #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
 
-        parsed_job = Sidekiq.load_json(job)
-        client_id = parsed_job["client_id"]
-
-        Sidekiq.redis do |conn|
-          conn.zincrby('user_count', -1, client_id.to_s)
-          if conn.zscore('user_count',client_id.to_s) <= 0.0
-            conn.zrem('user_count',client_id.to_s)
-          end
-        end
-        p 'it has retrieved pq work'
-      else
-        # for normal queues
-        normal_queues_cmd = queues_cmd[0]
-        work = Sidekiq.redis do |conn|
-         conn.brpop(*normal_queues_cmd) 
-        end
-      end
-      UnitOfWork.new(*work) if work
+      #   # for normal queues
+      #   normal_queues_cmd = queues_cmd[0]
+      #   work = Sidekiq.redis do |conn|
+      #    conn.brpop(*normal_queues_cmd) 
+      #   end
+      # end
+      # UnitOfWork.new(*work) if work
     end
 
     # Creating the Redis#brpop command takes into account any

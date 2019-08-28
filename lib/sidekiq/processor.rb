@@ -35,6 +35,8 @@ module Sidekiq
       @job = nil
       @thread = nil
       @strategy = (mgr.options[:fetch] || Sidekiq::BasicFetch).new(mgr.options)
+      ## modif
+      @basic_fetch_strategy = Sidekiq::BasicFetch.new(mgr.options)
       @reloader = Sidekiq.options[:reloader]
       @job_logger = (mgr.options[:job_logger] || Sidekiq::JobLogger).new
       @retrier = Sidekiq::JobRetry.new
@@ -80,6 +82,12 @@ module Sidekiq
     end
 
     def get_one
+      false_or_true = [true, false].sample
+      if false_or_true
+        work = @strategy.retrieve_work
+      else
+        work = @basic_fetch_strategy.basic_retrieve_work
+      end
       work = @strategy.retrieve_work
       p "@strategy = #{@strategy}"
 

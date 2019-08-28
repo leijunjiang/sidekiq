@@ -198,7 +198,7 @@ module Sidekiq
         p '/' * 100
         p payloads
         p payloads.first["queue"]
-        if client_id = payloads.first["args"].second["user_id"] || payloads.first["args"].second[:user_id]
+        if client_id = payloads.first["args"].second
           @redis_pool.with do |conn|
             user_count = conn.zscore('user_count',client_id)
             user_count ||= '0.0'

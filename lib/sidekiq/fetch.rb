@@ -47,11 +47,13 @@ module Sidekiq
       # treatment for priority queues
       p "@pq_queues = #{@pq_queues}"
       p "pq_queues_cmd = #{pq_queues_cmd}"
-      
+
       queue, job = Sidekiq.redis do |conn|
         conn.bzpopmin(*pq_queues_cmd) 
       end
       work = [queue, job]
+      p "fetched queue = #{queue}"
+      p "fetched job = #{job}"
 
       parsed_job = Sidekiq.load_json(job)
       client_id = parsed_job["client_id"]

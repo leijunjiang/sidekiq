@@ -45,7 +45,7 @@ module Sidekiq
 
       # p 'it is retrieving pq work'
       # treatment for priority queues
-      
+
       # p "@pq_queues = #{@pq_queues}"
       # p "pq_queues_cmd = #{pq_queues_cmd}"
 
@@ -57,11 +57,11 @@ module Sidekiq
       if pq_work
         queue, job, score = pq_work
         parsed_job = Sidekiq.load_json(job)
-        client_id = parsed_job["client_id"]
+        client_id = parsed_job["client_id"] || parsed_job[:client_id]
 
         Sidekiq.redis do |conn|
-          conn.zincrby('user_count', -1, client_id.to_s)
-          if conn.zscore('user_count',client_id.to_s) <= 0.0
+          user_count = conn.zincrby('user_count', -1, client_id.to_s)
+          if user_count <= 0.0
             conn.zrem('user_count',client_id.to_s)
           end
         end

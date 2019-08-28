@@ -216,7 +216,7 @@ module Sidekiq
             end
 
             conn.zincrby('user_priority_score',1, client_id)
-            user_count += 1
+            user_count = (user_count.to_f + 1).to_s
             conn.zincrby('user_count',user_count, client_id)
           end
         end

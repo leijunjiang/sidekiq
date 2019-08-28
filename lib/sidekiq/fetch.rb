@@ -58,7 +58,7 @@ module Sidekiq
         queue, job, score = pq_work
         parsed_job = Sidekiq.load_json(job)
         p "parsed_job = #{parsed_job}"
-        client_id = parsed_job["client_id"] || parsed_job[:client_id]
+        client_id = parsed_job["args"].second["client_id"] || parsed_job["args"].second[:client_id]
         p "client_id = #{client_id}"
         user_count = Sidekiq.redis do |conn|
           conn.zincrby('user_count', -1, client_id)

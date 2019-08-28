@@ -82,8 +82,8 @@ module Sidekiq
     end
 
     def get_one
-      false_or_true = [true, false].sample
-      if false_or_true
+      @false_or_true = [true, false].sample
+      if @false_or_true
         work = @strategy.retrieve_work
       else
         work = @basic_fetch_strategy.pq_retrieve_work
@@ -91,7 +91,7 @@ module Sidekiq
       # work = @strategy.retrieve_work
       # p "@strategy = #{work}"
 
-      p "work = #{work}"
+      p "work = #{work}" 
 
       if @down
         logger.info { "Redis is online, #{::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @down} sec downtime" }
@@ -205,6 +205,8 @@ module Sidekiq
 
     def execute_job(worker, cloned_args)
       p 'executing_job'
+      p "worker = #{worker}"
+      p "cloned_args = #{cloned_args}"
       worker.perform(*cloned_args)
     end
 

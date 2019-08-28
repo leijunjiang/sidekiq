@@ -215,7 +215,7 @@ module Sidekiq
           if client_id = payloads.first["args"].second["user_id"]
             user_count = conn.zscore('user_count',client_id)
             user_count ||= '0.0'
-            user_priority_score = conn.zscore('user_priority_score',client_id)
+            user_priority_score = conn.zscore('user_priority_score',client_id).value
             user_priority_score ||= '0.0'
             p '/' * 100
             p user_priority_score

@@ -52,6 +52,7 @@ module Sidekiq
         # conn.bzpopmin(*pq_queues_cmd) 
         conn.bzpopmin("conn.bzpopmin(*pq_queues_cmd)")
       end
+      p "returning pq_work #{pq_work}"
       if pq_work
         queue, job, score = pq_work
         parsed_job = Sidekiq.load_json(job)
@@ -64,7 +65,7 @@ module Sidekiq
           end
         end
         work = [queue, job]
-
+        p "returning work #{work}"
         UnitOfWork.new(*work) 
       end
     end

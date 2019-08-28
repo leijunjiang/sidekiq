@@ -58,14 +58,14 @@ module Sidekiq
         queue, job, score = pq_work
         parsed_job = Sidekiq.load_json(job)
         client_id = parsed_job["client_id"] || parsed_job[:client_id]
-
+        p "client_id = #{client_id}"
         user_count = Sidekiq.redis do |conn|
-          conn.zincrby('user_count', -1, client_id.to_s)
+          conn.zincrby('user_count', -1, client_id)
         end
         p "user_count = #{user_count}"
         if user_count <= 0.0
           Sidekiq.redis do |conn|
-            conn.zrem('user_count',client_id.to_s)
+            conn.zrem('user_count',client_id)
           end
           p "user_count ne bouge pas"
         else

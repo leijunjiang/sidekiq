@@ -72,8 +72,8 @@ module Sidekiq
               conn.zrem('user_priority_score',client_id)
               p "user_priority_score est remis a zero"
             end 
-          else
-            p "user_count ne bouge pas"
+          # else
+          #   p "user_count ne bouge pas"
           end
         end
         work = [queue, job]

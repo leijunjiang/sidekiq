@@ -48,25 +48,24 @@ module Sidekiq
       p "@pq_queues = #{@pq_queues}"
       p "pq_queues_cmd = #{pq_queues_cmd}"
 
-      queue, job = Sidekiq.redis do |conn|
+      pq_work = Sidekiq.redis do |conn|
         conn.bzpopmin(*pq_queues_cmd) 
       end
-      work = [queue, job]
-      p "fetched queue = #{queue}"
-      p "fetched job = #{job}"
+      if pq_work
+        queue, job, score = pq_work
+        parsed_job = Sidekiq.load_json(job)
+        client_id = parsed_job["client_id"]
 
-      parsed_job = Sidekiq.load_json(job)
-      client_id = parsed_job["client_id"]
-
-      Sidekiq.redis do |conn|
-        conn.zincrby('user_count', -1, client_id.to_s)
-        if conn.zscore('user_count',client_id.to_s) <= 0.0
-          conn.zrem('user_count',client_id.to_s)
+        Sidekiq.redis do |conn|
+          conn.zincrby('user_count', -1, client_id.to_s)
+          if conn.zscore('user_count',client_id.to_s) <= 0.0
+            conn.zrem('user_count',client_id.to_s)
+          end
         end
-      end
-      p 'it has retrieved pq work'
+        work = [queue, job]
 
-      UnitOfWork.new(*work) if work
+        UnitOfWork.new(*work) 
+      end
     end
 
 

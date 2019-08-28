@@ -32,7 +32,7 @@ module Sidekiq
         @queues = @queues.uniq
         @queues << TIMEOUT
       end
-      @pq_queues = options[:pq_queues].map { |q| "pq_queue:#{q}" }
+      @pq_queues = options[:pq_queues].map { |q| "queue:#{q}" }
       if @strictly_ordered_queues
         @pq_queues = @pq_queues.uniq
         @pq_queues << TIMEOUT

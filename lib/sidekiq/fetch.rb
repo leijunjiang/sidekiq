@@ -50,7 +50,7 @@ module Sidekiq
 
       pq_work = Sidekiq.redis do |conn|
         # conn.bzpopmin(*pq_queues_cmd) 
-        conn.bzpopmin("conn.bzpopmin(*pq_queues_cmd)")
+        conn.bzpopmin("priority_queues")
       end
       p "returning pq_work #{pq_work}"
       if pq_work

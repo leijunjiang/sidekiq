@@ -152,11 +152,11 @@ module Sidekiq
     end
 
     def process(work)
-      p 'processing work'
+      p 'processing work' unless @false_or_true 
       jobstr = work.job
       queue = work.queue_name
-      p "processing jobstr = #{jobstr}"
-      p "processing queue = #{queue}"
+      p "processing jobstr = #{jobstr}" unless @false_or_true 
+      p "processing queue = #{queue}" unless @false_or_true 
       # Treat malformed JSON as a special case: job goes straight to the morgue.
       job_hash = nil
       begin
@@ -204,9 +204,9 @@ module Sidekiq
     end
 
     def execute_job(worker, cloned_args)
-      p 'executing_job'
-      p "worker = #{worker}"
-      p "cloned_args = #{cloned_args}"
+      p 'executing_job' unless @false_or_true  
+      p "worker = #{worker}" unless @false_or_true 
+      p "cloned_args = #{cloned_args}" unless @false_or_true 
       worker.perform(*cloned_args)
     end
 

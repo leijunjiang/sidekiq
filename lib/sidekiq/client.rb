@@ -209,19 +209,19 @@ module Sidekiq
         # "lock_expiration"=>nil, 
         # "unique_prefix"=>"uniquejobs", 
         # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
-        
+
         ### modification of sidekiq
         if queue.start_with?('pq_')
-          p '/' * 100
-          p payloads
-          p '/' * 100
           if client_id = payloads.first["args"].second["user_id"]
             user_count = conn.zscore('user_count',client_id)
-            user_count ||= 0.0
+            user_count ||= '0.0'
             user_priority_score = conn.zscore('user_priority_score',client_id)
-            user_priority_score ||= 0.0
+            user_priority_score ||= '0.0'
+            p '/' * 100
+            p user_priority_score
+            p '/' * 100
             conn.zadd("priority_queues",payloads.map { |hash|
-                user_priority_score += 1
+                user_priority_score = (user_priority_score.to_f + 1).to_s
                 [user_priority_score, Sidekiq.dump_json(hash)]
               })
             conn.zincrby('user_priority_score',1,client_id)

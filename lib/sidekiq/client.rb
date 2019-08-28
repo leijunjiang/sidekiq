@@ -193,8 +193,8 @@ module Sidekiq
         # "lock_expiration"=>nil, 
         # "unique_prefix"=>"uniquejobs", 
         # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
-
-      if payloads.first["queue"].start_with?('pq_')
+      queue = payloads.first["queue"]
+      if queue.start_with?('pq_')
         p '/' * 100
         if client_id = payloads.first["args"].second["user_id"]
           user_count = conn.zscore('user_count',client_id)

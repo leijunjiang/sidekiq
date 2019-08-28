@@ -211,11 +211,10 @@ module Sidekiq
             # next_user_count = (user_count.to_f + 1).to_s
             # p "user_priority_score after = #{user_priority_score}" 
 
-            @redis_pool.with do |conn|
-              conn.multi do
-                pq_atomic_push(conn, payloads, client_id, queue, user_priority_score, user_count)
-              end
+            conn.multi do
+              pq_atomic_push(conn, payloads, client_id, queue, user_priority_score, user_count)
             end
+            
             user_count = conn.zscore('user_count',client_id)
             user_priority_score = conn.zscore('user_priority_score',client_id)
             p "user_priority_score after = #{user_priority_score}" 

@@ -198,18 +198,19 @@ module Sidekiq
 
         ### modification of sidekiq
         if queue.start_with?('pq_')
+          p payloads
           if client_id = payloads["client_id"]
-            user_count = conn.zscore('user_count',client_id.to_s)
+            user_count = conn.zscore('user_count',client_id)
             user_count ||= 0.0
-            user_priority_score = conn.zscore('user_priority_score',client_id.to_s)
+            user_priority_score = conn.zscore('user_priority_score',client_id)
             user_priority_score ||= 0.0
             conn.zadd("priority_queues",payloads.map { |hash|
                 user_priority_score += 1
                 [user_priority_score, Sidekiq.dump_json(hash)]
               })
-            conn.zincrby('user_priority_score',1,client_id.to_s)
+            conn.zincrby('user_priority_score',1,client_id)
             user_count += 1
-            conn.zincrby('user_count',1,client_id.to_s)
+            conn.zincrby('user_count',1,client_id)
             p 'pq job a ete pushed'
           else
             # raise error

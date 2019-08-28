@@ -88,8 +88,10 @@ module Sidekiq
       else
         work = @basic_fetch_strategy.pq_retrieve_work
       end
-      work = @strategy.retrieve_work
-      p "@strategy = #{@strategy}"
+      # work = @strategy.retrieve_work
+      # p "@strategy = #{work}"
+
+      p "work = #{work}"
 
       if @down
         logger.info { "Redis is online, #{::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @down} sec downtime" }

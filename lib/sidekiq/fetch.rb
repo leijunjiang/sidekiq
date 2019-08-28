@@ -66,7 +66,7 @@ module Sidekiq
         end
         work = [queue, job]
         p "returning work #{work}"
-        UnitOfWork.new(*work) 
+        return UnitOfWork.new(*work) 
       end
     end
 

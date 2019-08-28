@@ -239,6 +239,7 @@ module Sidekiq
           [at, Sidekiq.dump_json(hash)]
         })
       else
+        queue = payloads.first["queue"]
         now = Time.now.to_f
         to_push = payloads.map { |entry|
           entry["enqueued_at"] = now

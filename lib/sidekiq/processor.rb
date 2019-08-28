@@ -202,6 +202,7 @@ module Sidekiq
     end
 
     def execute_job(worker, cloned_args)
+      p 'executing_job'
       worker.perform(*cloned_args)
     end
 

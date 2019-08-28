@@ -74,6 +74,7 @@ module Sidekiq
       false_or_true = [true, false].sample
       if false_or_true
         p 'it is retrieving pq work'
+        p "@queues = #{@queues}"
         # treatment for priority queues
         pq_queues_cmd = queues_cmd[1]
         queue, job = Sidekiq.redis do |conn|

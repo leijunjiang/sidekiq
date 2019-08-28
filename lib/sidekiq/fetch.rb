@@ -39,12 +39,12 @@ module Sidekiq
 
         # @queues << TIMEOUT
       end
-      @false_or_true = false
     end
 
     def retrieve_work
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
-      if @false_or_true
+      false_or_true = [true, false].sample
+      if false_or_true
         # treatment for priority queues
         pq_queues_cmd = queues_cmd[1]
         queue, job = Sidekiq.redis do |conn|
@@ -62,14 +62,12 @@ module Sidekiq
           end
         end
         p 'pq job a ete traite'
-        @false_or_true = !@false_or_true
       else
         # for normal queues
         normal_queues_cmd = queues_cmd[0]
         work = Sidekiq.redis do |conn|
          conn.brpop(*normal_queues_cmd) 
         end
-        @false_or_true = !@false_or_true
       end
       UnitOfWork.new(*work) if work
     end

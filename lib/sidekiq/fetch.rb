@@ -44,10 +44,11 @@ module Sidekiq
     def basic_retrieve_work
       #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
       p 'it is inside a retrieving work method'
-      
+
       p 'it is retrieving pq work'
       # treatment for priority queues
       pq_queues_cmd = queues_cmd[1]
+      p "pq_queues_cmd = #{pq_queues_cmd}"
       queue, job = Sidekiq.redis do |conn|
         conn.bzpopmin(*pq_queues_cmd) 
       end

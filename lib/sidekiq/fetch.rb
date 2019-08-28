@@ -53,6 +53,7 @@ module Sidekiq
         # conn.bzpopmin(*pq_queues_cmd) 
         conn.bzpopmin(*pq_queues_cmd)
       end
+
       # p "returning pq_work #{pq_work}"
       if pq_work
         queue, job, score = pq_work
@@ -65,15 +66,15 @@ module Sidekiq
           user_count = conn.zscore('user_count',client_id)
           p "user_count = #{user_count}"
           if user_count <= 1.0
-            conn.multi |conn|
+            conn.multi do |conn|
               # conn.zincrby('user_count', -1, client_id)
               conn.zrem('user_count',client_id)
               p "user_count est remis a zero"
               conn.zrem('user_priority_score',client_id)
               p "user_priority_score est remis a zero"
             end 
-          # else
-          #   p "user_count ne bouge pas"
+          else
+            p "user_count ne bouge pas"
           end
         end
         work = [queue, job]

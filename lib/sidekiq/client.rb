@@ -234,6 +234,7 @@ module Sidekiq
     end
 
     def pq_atomic_push(conn, payloads, user_priority_score,queue)
+      p 'I am inside of pq_atomic_push'
       conn.zadd("queue:#{queue}",payloads.map { |hash|
         [user_priority_score, Sidekiq.dump_json(hash)]
       })

@@ -193,32 +193,37 @@ module Sidekiq
       # "lock_expiration"=>nil, 
       # "unique_prefix"=>"uniquejobs", 
       # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
-      queue_name = payloads.first["queue"]
-      if queue_name.start_with?('pq_')
+      queue= payloads.first["queue"]
+      if queue.start_with?('pq_')
         p '/' * 100
         p payloads
         p payloads.first["queue"]
         if client_id = payloads.first["args"].second
           @redis_pool.with do |conn|
-            user_count = conn.zscore('user_count',client_id)
-            user_count ||= '0.0'
-            user_priority_score = conn.zscore('user_priority_score',client_id)
-            user_priority_score ||= '0.0'
-            p "user_priority_score before = #{user_priority_score}" 
-            user_priority_score = (user_priority_score.to_f + 1).to_s
-            p "user_count before = #{user_count}"
-            p "user_priority_score after = #{user_priority_score}" 
+            # user_count = conn.zscore('user_count',client_id)
+            # user_count ||= '0.0'
+            # user_priority_score = conn.zscore('user_priority_score',client_id)
+            # user_priority_score ||= '0.0'
+            # p "user_priority_score before = #{user_priority_score}" 
+            # user_priority_score = (user_priority_score.to_f + 1).to_s
+            # user_count = (user_count.to_f + 1).to_s
+            # p "user_count before = #{user_count}"
+            # p "user_priority_score after = #{user_priority_score}" 
 
             @redis_pool.with do |conn|
               conn.multi do
-                pq_atomic_push(conn, payloads, user_priority_score, queue_name)
+                pq_atomic_push(conn, payloads, client_id, queue)
               end
             end
-
-            conn.zincrby('user_priority_score',user_priority_score, client_id)
-            user_count = (user_count.to_f + 1).to_s
+            user_count = conn.zscore('user_count',client_id)
+            user_priority_score = conn.zscore('user_priority_score',client_id)
+            p "user_priority_score after = #{user_priority_score}" 
             p "user_count after = #{user_count}"
-            conn.zincrby('user_count',user_count, client_id)
+            
+            # conn.zincrby('user_priority_score',user_priority_score, client_id)
+            # user_count = (user_count.to_f + 1).to_s
+            # p "user_count after = #{user_count}"
+            # conn.zincrby('user_count',user_count, client_id)
           end
         else
           p 'le job n a pas ete pushed!!!!'
@@ -233,7 +238,9 @@ module Sidekiq
       true
     end
 
-    def pq_atomic_push(conn, payloads, user_priority_score,queue)
+    def pq_atomic_push(conn, payloads, client_id, queue)
+      conn.zincrby('user_priority_score',user_priority_score, client_id)
+      conn.zincrby('user_count',user_count, client_id)
       p 'I am inside of pq_atomic_push'
       conn.zadd("queue:#{queue}",payloads.map { |hash|
         [user_priority_score, Sidekiq.dump_json(hash)]

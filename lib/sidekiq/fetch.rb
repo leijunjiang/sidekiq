@@ -68,9 +68,9 @@ module Sidekiq
           Sidekiq.redis do |conn|
             conn.zrem('user_count',client_id)
           end
-          p "user_count ne bouge pas"
-        else
           p "user_count est remis a zero"
+        else
+          p "user_count ne bouge pas"
         end
         work = [queue, job]
         # p "returning work #{work}"

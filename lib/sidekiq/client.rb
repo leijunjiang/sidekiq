@@ -194,7 +194,8 @@ module Sidekiq
       # "unique_prefix"=>"uniquejobs", 
       # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
       queue_name = payloads.first["queue"]
-
+      p '/' * 100
+      p payloads
       if queue_name.start_with?('pq_')
         p '/' * 100
         p payloads.first["queue"]
@@ -220,6 +221,8 @@ module Sidekiq
             p "user_count after = #{user_count}"
             conn.zincrby('user_count',user_count, client_id)
           end
+        else
+          p 'le job n a pas ete pushed!!!!'
         end
       else
         @redis_pool.with do |conn|

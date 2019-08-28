@@ -179,22 +179,6 @@ module Sidekiq
     private
 
     def raw_push(payloads)
-      @redis_pool.with do |conn|
-        conn.multi do
-          atomic_push(conn, payloads)
-        end
-      end
-      true
-    end
-
-    def atomic_push(conn, payloads)
-      if payloads.first["at"]
-        conn.zadd("schedule", payloads.map { |hash|
-          at = hash.delete("at").to_s
-          [at, Sidekiq.dump_json(hash)]
-        })
-      else
-        queue = payloads.first["queue"]
         # payloads = 
         # [{"class"=>"GlobalScreeningWorker", 
         # "args"=>[3531, {"source"=>"portfolio", "user_id"=>1}, "1"], 
@@ -210,38 +194,56 @@ module Sidekiq
         # "unique_prefix"=>"uniquejobs", 
         # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
 
-        ### modification of sidekiq
-        if queue.start_with?('pq_')
-          if client_id = payloads.first["args"].second["user_id"]
-            user_count = conn.zscore('user_count',client_id)
-            user_count ||= '0.0'
-            user_priority_score = conn.zscore('user_priority_score',client_id).value
-            user_priority_score ||= '0.0'
-            p '/' * 100
-            p user_priority_score
-            p '/' * 100
-            conn.zadd("priority_queues",payloads.map { |hash|
-                user_priority_score = (user_priority_score.to_f + 1).to_s
-                [user_priority_score, Sidekiq.dump_json(hash)]
-              })
-            conn.zincrby('user_priority_score',1,client_id)
-            user_count += 1
-            conn.zincrby('user_count',1,client_id)
-            p 'pq job a ete pushed'
-          else
-            # raise error
-
+      if payloads.first["queue"].start_with?('pq_')
+        p '/' * 100
+        if client_id = payloads.first["args"].second["user_id"]
+          user_count = conn.zscore('user_count',client_id)
+          user_count ||= '0.0'
+          user_priority_score = conn.zscore('user_priority_score',client_id)
+          user_priority_score ||= '0.0'
+          user_priority_score = (user_priority_score.to_f + 1).to_s
+          p user_count
+          p user_priority_score
+          @redis_pool.with do |conn|
+            conn.multi do
+              pq_atomic_push(conn, payloads, user_priority_score)
+            end
           end
-        else
-        ### legacy sidekiq
-          now = Time.now.to_f
-          to_push = payloads.map { |entry|
-            entry["enqueued_at"] = now
-            Sidekiq.dump_json(entry)
-          }
-          conn.sadd("queues", queue)
-          conn.lpush("queue:#{queue}", to_push)
+
+          conn.zincrby('user_priority_score',1, client_id)
+          user_count += 1
+          conn.zincrby('user_count',user_count, client_id)
         end
+      else
+        @redis_pool.with do |conn|
+          conn.multi do
+            atomic_push(conn, payloads)
+          end
+        end
+      end
+      true
+    end
+
+    def pq_atomic_push(conn, payloads, user_priority_score)
+      conn.zadd("priority_queues",payloads.map { |hash|
+        [user_priority_score, Sidekiq.dump_json(hash)]
+      })
+    end
+
+    def atomic_push(conn, payloads)
+      if payloads.first["at"]
+        conn.zadd("schedule", payloads.map { |hash|
+          at = hash.delete("at").to_s
+          [at, Sidekiq.dump_json(hash)]
+        })
+      else
+        now = Time.now.to_f
+        to_push = payloads.map { |entry|
+          entry["enqueued_at"] = now
+          Sidekiq.dump_json(entry)
+        }
+        conn.sadd("queues", queue)
+        conn.lpush("queue:#{queue}", to_push)
       end
     end
 

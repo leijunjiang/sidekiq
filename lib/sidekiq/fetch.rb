@@ -49,7 +49,8 @@ module Sidekiq
       p "pq_queues_cmd = #{pq_queues_cmd}"
 
       pq_work = Sidekiq.redis do |conn|
-        conn.bzpopmin(*pq_queues_cmd) 
+        # conn.bzpopmin(*pq_queues_cmd) 
+        conn.bzpopmin("conn.bzpopmin(*pq_queues_cmd)")
       end
       if pq_work
         queue, job, score = pq_work

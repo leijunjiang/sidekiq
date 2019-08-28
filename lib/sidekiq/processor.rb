@@ -161,7 +161,8 @@ module Sidekiq
       job_hash = nil
       begin
         job_hash = Sidekiq.load_json(jobstr)
-        p "job_hash = #{job_hash}" unless @false_or_true 
+        p "job_hash " unless @false_or_true 
+        p job_hash unless @false_or_true 
       rescue => ex
         handle_exception(ex, {context: "Invalid JSON for job", jobstr: jobstr})
         # we can't notify because the job isn't a valid hash payload.

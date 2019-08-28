@@ -91,7 +91,7 @@ module Sidekiq
       # work = @strategy.retrieve_work
       # p "@strategy = #{work}"
 
-      p "work = #{work}" 
+      # p "work = #{work}" 
 
       if @down
         logger.info { "Redis is online, #{::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @down} sec downtime" }

@@ -150,9 +150,11 @@ module Sidekiq
     end
 
     def process(work)
+      p 'processing work'
       jobstr = work.job
       queue = work.queue_name
-
+      p "processing jobstr = #{jobstr}"
+      p "processing queue = #{queue}"
       # Treat malformed JSON as a special case: job goes straight to the morgue.
       job_hash = nil
       begin

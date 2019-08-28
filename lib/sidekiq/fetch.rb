@@ -69,6 +69,10 @@ module Sidekiq
             conn.zrem('user_count',client_id)
           end
           p "user_count est remis a zero"
+          Sidekiq.redis do |conn|
+            conn.zrem('user_priority_score',client_id)
+          end
+          p "user_priority_score est remis a zero"
         else
           p "user_count ne bouge pas"
         end

@@ -198,7 +198,9 @@ module Sidekiq
 
         ### modification of sidekiq
         if queue.start_with?('pq_')
+          p '/' * 100
           p payloads
+          p '/' * 100
           if client_id = payloads["client_id"]
             user_count = conn.zscore('user_count',client_id)
             user_count ||= 0.0

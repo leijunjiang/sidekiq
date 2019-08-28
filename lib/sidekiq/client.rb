@@ -193,9 +193,9 @@ module Sidekiq
       # "lock_expiration"=>nil, 
       # "unique_prefix"=>"uniquejobs", 
       # "unique_digest"=>"uniquejobs:42d595ed5cb9ddc926255ae50ce91174"}]
-      queue = payloads.first["queue"]
+      queue_name = payloads.first["queue"]
 
-      if queue.start_with?('pq_')
+      if queue_name.start_with?('pq_')
         p '/' * 100
         p payloads.first["queue"]
         if client_id = payloads.first["args"].second["user_id"]
@@ -211,7 +211,7 @@ module Sidekiq
 
             @redis_pool.with do |conn|
               conn.multi do
-                pq_atomic_push(conn, payloads, user_priority_score)
+                pq_atomic_push(conn, payloads, user_priority_score, queue_name)
               end
             end
 
@@ -231,8 +231,8 @@ module Sidekiq
       true
     end
 
-    def pq_atomic_push(conn, payloads, user_priority_score)
-      conn.zadd("priority_queues",payloads.map { |hash|
+    def pq_atomic_push(conn, payloads, user_priority_score,queue)
+      conn.zadd("queue:#{queue}",payloads.map { |hash|
         [user_priority_score, Sidekiq.dump_json(hash)]
       })
     end

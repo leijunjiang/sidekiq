@@ -48,53 +48,48 @@ module Sidekiq
 
       # p "@pq_queues = #{@pq_queues}"
       # p "pq_queues_cmd = #{pq_queues_cmd}"
-
-      pq_work = Sidekiq.redis do |conn|
-        # conn.bzpopmin(*pq_queues_cmd) 
-        conn.bzpopmin(*pq_queues_cmd)
-      end
+      unity_of_work = retrieve_work
+      if unity_of_work 
+        return unity_of_work
+      else
+        pq_work = Sidekiq.redis do |conn|
+          # conn.bzpopmin(*pq_queues_cmd) 
+          conn.bzpopmin(*pq_queues_cmd)
+        end
 
       # p "returning pq_work #{pq_work}"
-      if pq_work
-        queue, job, score = pq_work
-        parsed_job = Sidekiq.load_json(job)
-        client_id = parsed_job["args"].second
-        # p "parsed_job = #{parsed_job}"
-        # p "client_id = #{client_id}"
+        if pq_work
+          queue, job, score = pq_work
+          parsed_job = Sidekiq.load_json(job)
+          client_id = parsed_job["args"].second
 
-        Sidekiq.redis do |conn|
-          user_count = conn.zscore('user_count',client_id)
-          p "user_count = #{user_count}"
-          if user_count <= 1.0
-            conn.multi do |conn|
+          Sidekiq.redis do |conn|
+            user_count = conn.zscore('user_count',client_id)
+            p "user_count = #{user_count}"
+            if user_count <= 1.0
+              conn.multi do |conn|
+                conn.zincrby('user_count', -1, client_id)
+                conn.zrem('user_count',client_id)
+                p "user_count est remis a zero"
+                conn.zrem('user_priority_score',client_id)
+                p "user_priority_score est remis a zero"
+              end 
+            else
               conn.zincrby('user_count', -1, client_id)
-              conn.zrem('user_count',client_id)
-              p "user_count est remis a zero"
-              conn.zrem('user_priority_score',client_id)
-              p "user_priority_score est remis a zero"
-            end 
-          else
-            conn.zincrby('user_count', -1, client_id)
-            p "user_count -1 "
+              p "user_count -1 "
+            end
           end
+          work = [queue, job]
+          # p "returning work #{work}"
+          return UnitOfWork.new(*work) 
         end
-        work = [queue, job]
-        # p "returning work #{work}"
-        return UnitOfWork.new(*work) 
       end
     end
 
 
     def retrieve_work
-      # #work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
-
-      #   # for normal queues
-      #   normal_queues_cmd = queues_cmd[0]
-      #   work = Sidekiq.redis do |conn|
-      #    conn.brpop(*normal_queues_cmd) 
-      #   end
-      # end
-      # UnitOfWork.new(*work) if work
+      work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
+      UnitOfWork.new(*work) if work
     end
 
     # Creating the Redis#brpop command takes into account any

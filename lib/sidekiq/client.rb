@@ -181,7 +181,7 @@ module Sidekiq
     def raw_push(payloads)
       # payloads = 
       # [{"class"=>"GlobalScreeningWorker", 
-      # "args"=>[3531, {"source"=>"portfolio", "user_id"=>1}, "1"], 
+      # "args"=>[3531, "1", {"source"=>"portfolio", "user_id"=>1}], 
       # "retry"=>0, 
       # "queue"=>"pq_dnb_screen", 
       # "backtrace"=>true, 

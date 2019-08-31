@@ -32,11 +32,11 @@ module Sidekiq
         @queues = @queues.uniq
         @queues << TIMEOUT
       end
-      @pq_queues = options[:pq_queues].map { |q| "queue:#{q}" }
-      if @strictly_ordered_queues
-        @pq_queues = @pq_queues.uniq
-        @pq_queues << TIMEOUT
-      end
+      @pq_queues = options[:pq_queues]
+      # if @strictly_ordered_queues
+      #   @pq_queues = @pq_queues.uniq
+      #   @pq_queues << TIMEOUT
+      # end
     end
 
     def pq_retrieve_work
@@ -48,42 +48,43 @@ module Sidekiq
 
       # p "@pq_queues = #{@pq_queues}"
       # p "pq_queues_cmd = #{pq_queues_cmd}"
-      unity_of_work = retrieve_work
-      if unity_of_work 
-        return unity_of_work
-      else
+      # unity_of_work = retrieve_work
+      # if unity_of_work 
+      #   return unity_of_work
+      # else
         pq_work = Sidekiq.redis do |conn|
-          # conn.bzpopmin(*pq_queues_cmd) 
           conn.bzpopmin(*pq_queues_cmd)
         end
-
       # p "returning pq_work #{pq_work}"
         if pq_work
           queue, job, score = pq_work
           parsed_job = Sidekiq.load_json(job)
-          client_id = parsed_job["args"].second
+          user_id = parsed_job["args"].last["user_id"] || parsed_job["args"].last[:user_id]
+          
 
           Sidekiq.redis do |conn|
-            user_count = conn.zscore('user_count',client_id)
-            p "user_count = #{user_count}"
+            user_count = conn.zscore('user_count',user_id)
+            # p "user_count = #{user_count}"
+            user_priority_score = conn.zscore('user_priority_score',user_id)
+            p "There are #{user_count} pq job inside for user #{user_id}, now it is retrieving pq job of score: #{score}."
             if user_count <= 1.0
               conn.multi do |conn|
-                conn.zincrby('user_count', -1, client_id)
-                conn.zrem('user_count',client_id)
-                p "user_count est remis a zero"
-                conn.zrem('user_priority_score',client_id)
-                p "user_priority_score est remis a zero"
+                conn.zincrby('user_count', -1, user_id)
+                conn.zrem('user_count',user_id)
+                # p "user_count #{user_id} est remis a zero"
+                conn.zrem('user_priority_score',user_id)
+                # p "user_priority_score #{user_id} est remis a zero"
               end 
             else
-              conn.zincrby('user_count', -1, client_id)
-              p "user_count -1 "
+              conn.zincrby('user_count', -1, user_id)
+              # p "user_count #{user_id} moins un -1 "
             end
           end
           work = [queue, job]
           # p "returning work #{work}"
           return UnitOfWork.new(*work) 
         end
-      end
+      # end
     end
 
 
@@ -108,13 +109,16 @@ module Sidekiq
     end
 
     def pq_queues_cmd
-      if @strictly_ordered_queues
-        @pq_queues
-      else
-        queues = @pq_queues.shuffle.uniq
+      # if @strictly_ordered_queues
+      #   @pq_queues
+      # else
+        queues = []
+        @pq_queues&.each { |queue, weight| weight.times { queues << queue } }
+        queues = queues.shuffle.uniq
+        queues = queues.map { |q| "queue:#{q}" }
         queues << TIMEOUT
         queues
-      end
+      # end
     end
 
     # By leaving this as a class method, it can be pluggable and used by the Manager actor. Making it

@@ -82,12 +82,20 @@ module Sidekiq
     end
 
     def get_one
-      @false_or_true = [true, false].sample
-      if @false_or_true
-        work = @strategy.retrieve_work
-      else
-        work = @basic_fetch_strategy.pq_retrieve_work
+      work = @strategy.retrieve_work
+      unless work
+        if work = @basic_fetch_strategy.retrieve_work
+          work.requeue
+          p 'beging sleep 5'
+          sleep 5
+          work = nil
+        else
+          work = @basic_fetch_strategy.pq_retrieve_work
+          @got_from_pq = true
+        end
       end
+
+
       # work = @strategy.retrieve_work
       # p "@strategy = #{work}"
 
@@ -152,17 +160,30 @@ module Sidekiq
     end
 
     def process(work)
-      p 'processing work' unless @false_or_true 
+      # p 'processing pq work' if @got_from_pq
       jobstr = work.job
       queue = work.queue_name
-      p "processing jobstr = #{jobstr}" unless @false_or_true 
-      p "processing queue = #{queue}" unless @false_or_true 
+
+      # if queue.start_with?('pq_')
+      #   p "queue = #{queue}"
+      #   p "jobstr = #{jobstr}"
+      #   queue = queue[3..-1]
+      # end
+
+      # p "processing pq jobstr = #{jobstr}" if @got_from_pq 
+      # p "processing pq queue = #{queue}" if @got_from_pq
       # Treat malformed JSON as a special case: job goes straight to the morgue.
       job_hash = nil
       begin
         job_hash = Sidekiq.load_json(jobstr)
-        p "job_hash " unless @false_or_true 
-        p job_hash unless @false_or_true 
+        if queue.start_with?('pq_')
+          opts = job_hash["args"].last
+          enqueued_at = job_hash["enqueued_at"]
+          now = Time.now.to_f 
+          elapsed_time = now - enqueued_at
+          p "opts = #{opts}, elapsed_time = #{elapsed_time}"
+          queue = queue[3..-1]
+        end
       rescue => ex
         handle_exception(ex, {context: "Invalid JSON for job", jobstr: jobstr})
         # we can't notify because the job isn't a valid hash payload.
@@ -206,9 +227,9 @@ module Sidekiq
     end
 
     def execute_job(worker, cloned_args)
-      p 'executing_job' unless @false_or_true  
-      p "worker = #{worker}" unless @false_or_true 
-      p "cloned_args = #{cloned_args}" unless @false_or_true 
+      # p 'executing a qqqq   pq job'
+      # p "worker = #{worker}" 
+      # p "cloned_args = #{cloned_args}"
       worker.perform(*cloned_args)
     end
 
